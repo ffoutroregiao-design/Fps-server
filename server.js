@@ -82,6 +82,7 @@ function handleAuth(ws, msg) {
 
 // arma PD: apaga a conta do jogador atingido, avisa todos e desconecta
 function apagarPorPd(vic) {
+  broadcast({ type: 'strike', x: vic.x, y: vic.y, z: vic.z });
   broadcast({ type: 'notice', text: `O jogador ${vic.name} foi atingido pela dourada por infringir regras` });
   delete accounts[vic.key];
   saveAccounts();
@@ -148,6 +149,19 @@ function onMessage(ws, raw) {
     }
     case 'away': {
       p.away = !!msg.on;
+      return;
+    }
+    case 'blast': {
+      // granada: dano para quem estiver no raio (o servidor confere a distância)
+      const cx = num(msg.x), cy = num(msg.y), cz = num(msg.z);
+      const R = 4.5;
+      broadcast({ type: 'boom', x: cx, y: cy, z: cz }, ws);
+      for (const t of [...byWs.values()]) {
+        if (t === p || t.away || t.hp <= 0) continue;
+        const d = Math.hypot(t.x - cx, (t.y + 0.9) - cy, t.z - cz);
+        if (d >= R) continue;
+        applyDamage(p, t, Math.round(100 * (1 - d / R)), false);
+      }
       return;
     }
   }
