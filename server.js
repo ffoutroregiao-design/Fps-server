@@ -85,6 +85,7 @@ function apagarPorPd(vic) {
   broadcast({ type: 'notice', text: `O jogador ${vic.name} foi atingido pela dourada por infringir regras` });
   delete accounts[vic.key];
   saveAccounts();
+  send(vic.ws, { type: 'pdzap' });
   send(vic.ws, { type: 'deleted', reason: 'Você foi atingido pela arma PD por infringir regras. Sua conta foi apagada.' });
   byWs.delete(vic.ws);
   byId.delete(vic.id);
