@@ -80,6 +80,17 @@ function handleAuth(ws, msg) {
   broadcast({ type: 'notice', text: `${p.name} entrou` }, ws);
 }
 
+// arma PD: apaga a conta do jogador atingido, avisa todos e desconecta
+function apagarPorPd(vic) {
+  broadcast({ type: 'notice', text: `O jogador ${vic.name} foi atingido pela dourada por infringir regras` });
+  delete accounts[vic.key];
+  saveAccounts();
+  send(vic.ws, { type: 'deleted', reason: 'Você foi atingido pela arma PD por infringir regras. Sua conta foi apagada.' });
+  byWs.delete(vic.ws);
+  byId.delete(vic.id);
+  try { vic.ws.close(); } catch (e) { /* ok */ }
+}
+
 function applyDamage(att, vic, dmg, pd) {
   vic.hp = Math.max(0, vic.hp - dmg);
   send(vic.ws, { type: 'damage', hp: vic.hp });
@@ -125,8 +136,8 @@ function onMessage(ws, raw) {
     case 'pdhit': {
       if (!p.admin || !p.pd) return;
       const t = byId.get(msg.target);
-      if (!t || t === p || t.away || t.hp <= 0) return;
-      applyDamage(p, t, MAX_HP, true);
+      if (!t || t === p || t.away) return;
+      apagarPorPd(t);
       return;
     }
     case 'pd': {
